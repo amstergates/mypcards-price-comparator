@@ -1,5 +1,4 @@
-# MYP Cards Price Comparator
-
+# Comparador de preços MYP Cards
 Comparador pessoal de preços para revisar uma pasta de cartas de Yu-Gi-Oh! em lote. Mostra o preço do anúncio, o menor preço comparável, a média das ofertas, o teto com tolerância e uma sugestão de preço para revisão manual.
 
 ## Rodar localmente
