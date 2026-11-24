@@ -1,0 +1,7 @@
+{
+  "name": "mypcards-price-comparator",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.9.0" },
+  "scripts": { "build": "node build.mjs", "dev": "node --env-file-if-exists=.env preview.mjs" }
+}

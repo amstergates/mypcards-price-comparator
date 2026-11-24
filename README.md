@@ -1,38 +1,43 @@
 # MYP Cards Price Comparator
 
-Ferramenta de uso pessoal para comparação e monitoramento de preços de cartas de Yu-Gi-Oh! anunciadas no MYP Cards.
+Comparador pessoal de preços para revisar uma pasta de cartas de Yu-Gi-Oh! em lote. Mostra o preço do anúncio, o menor preço comparável, a média das ofertas, o teto com tolerância e uma sugestão de preço para revisão manual.
 
-## Objetivo
+## Rodar localmente
 
-Comparar os preços dos meus próprios anúncios com referências de mercado da API oficial do MYP Cards, facilitando a identificação de preços acima ou abaixo do mercado e a manutenção da minha pasta de vendas. O aplicativo não é um marketplace nem um serviço de revenda de dados.
+Use Node.js 22.9 ou superior. O projeto não tem dependências de instalação.
 
-## Funcionalidades previstas
+```bash
+git clone https://github.com/amstergates/mypcards-price-comparator.git
+cd mypcards-price-comparator
+npm run build
+npm run dev
+```
 
-- Consulta individual e atualização em lote de referências.
-- Identificação por nome, edição e identificador do produto.
-- Comparação por idioma e conservação quando esses dados estiverem disponíveis.
-- Exibição de diferenças de preço e filtros para revisão manual.
-- Cache local, controle de frequência e retomada de consultas interrompidas.
-- Teste de conexão e configuração segura da chave da API.
+Abra [http://127.0.0.1:3000](http://127.0.0.1:3000). Clique em **Carregar exemplo** para testar com cartas fictícias. Para usar sua pasta, importe um CSV, TSV ou TXT, cole a lista na interface ou informe a URL da sua vitrine do MYP Cards. O app disponibiliza modelos de arquivos.
 
-## Integração
+## Revisar a pasta
 
-A integração autenticada está em planejamento, condicionada à aprovação do acesso. Endpoints pretendidos: precos, carta, edicoes e produto. O volume inicial estimado é de até 1.000 requisições por dia, sujeito aos limites autorizados e à necessidade real. O aplicativo deverá respeitar os termos de uso, limites de requisição e respostas de rate limiting, sem contornar restrições.
+- **Ver preços da minha pasta** cruza a lista carregada com referências salvas ou importadas. Os resultados mostram quais preços pedem revisão e sinalizam quando faltam ofertas. Use **Até R$ 1** para filtrar as cartas mais baratas e **Exportar CSV** para baixar a seleção.
+- **Completar referências** consulta em lote os produtos com coleta incompleta. As ofertas chegam à tabela conforme são lidas. O progresso mostra quantos produtos foram percorridos e quantos foram salvos neste navegador.
+- **Consultar referência**, na linha da carta, lê a primeira página. Se houver mais ofertas, o resultado é parcial. Durante uma pausa imposta pelo MYP Cards, o app usa a referência salva, quando disponível.
+- **Preços gerais pela API pública** exibe menor preço e média ponderada dos anúncios do produto. Use esses valores como referência geral, pois a API pode agrupar condições e idiomas e incluir seu próprio anúncio. Veja [como funciona a integração](docs/integracao-api.md).
 
-A ferramenta apoia a precificação de anúncios próprios. Não há previsão de cobrar pelo aplicativo ou redistribuir/comercializar os dados coletados.
+## Conectar ao MYP Cards pelo navegador
 
-## Segurança
+1. Na aba **Vitrine MYP**, informe a URL da sua vitrine de Yu-Gi-Oh!.
+2. Em **Configurar o favorito do MYP no Chrome**, salve **Conectar comparador MYP** na barra de favoritos.
+3. Clique em **Conectar ao MYP** no comparador e acione o favorito na aba do MYP que abrir. Mantenha as duas abas abertas para receber as referências.
 
-Credenciais e dados locais não devem ser publicados no GitHub. Consulte o arquivo de configuração de exemplo e a documentação em docs/.
+A coleta usa páginas de leitura, exclui seus próprios anúncios na comparação de ofertas equivalentes e respeita a espera informada pelo MYP Cards. **Parar coleta** mantém disponíveis as ofertas que já chegaram e foram salvas. Na aba da vitrine também é possível baixar um backup JSON para importar de volta no comparador.
 
-## Status
+## Dados locais
 
-Comparador em desenvolvimento. Este repositório contém a documentação inicial e a estrutura para a futura integração oficial; o código do protótipo existente ainda não foi publicado.
+A pasta e os resultados ficam no navegador. A opção **Preparar atualização** só prepara o valor para revisão manual. O comparador não grava alterações no MYP Cards.
 
-## Fonte dos dados
+O repositório não inclui capturas reais nem credenciais. Para usar um backup, prefira **Importar backup de uma coleta do MYP** no app. Em um build local, é possível incluir `data/vitrine.json` (objeto com `seller` e `rows`) e `data/ofertas-myp.json` (objeto com `seller` e `products`). O build incorpora esses arquivos quando presentes. Mantenha-os no seu ambiente local.
 
-[MYP Cards](https://mypcards.com/) — a atribuição deverá aparecer de forma visível junto às referências exibidas.
+## Código e fontes
 
-[Documentação oficial da API](https://mypcards.github.io/mypcards-api/)
+Veja a [estrutura do código](src/README.md) e a [documentação da API](docs/integracao-api.md).
 
-Projeto independente, sem vínculo oficial com o MYP Cards.
+As referências são atribuídas ao [MYP Cards](https://mypcards.com/) onde aparecem no app. Projeto independente, sem vínculo oficial com o MYP Cards.

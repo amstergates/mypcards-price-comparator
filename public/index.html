@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#f7f7fb">
+  <meta name="description" content="Organize sua pasta de cartas e compare preços em lote.">
+  <title>Comparador MYP Cards</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.mjs"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#inicio"><span class="brand-icon" aria-hidden="true">◈</span><span>MYP Cards<small>Comparador</small></span></a>
+    <nav aria-label="Navegação do comparador">
+      <a class="nav-link" data-nav="inicio" href="#inicio"><span aria-hidden="true">▦</span> Visão geral</a>
+      <a class="nav-link" data-nav="importacao" href="#importacao"><span aria-hidden="true">⇧</span> Importação</a>
+      <a class="nav-link" data-nav="resultados" href="#resultados"><span aria-hidden="true">≡</span> Resultados</a>
+    </nav>
+    <div class="sidebar-footer"><strong><span aria-hidden="true">◈</span> Espaço privado</strong><small>Seus dados de trabalho ficam neste navegador.</small><a href="https://mypcards.com/" target="_blank" rel="noopener noreferrer">Abrir MYP Cards</a></div>
+  </aside>
+  <main id="inicio">
+    <header class="intro">
+      <div><p class="context">Yu-Gi-Oh! <span></span> Análise de preços</p><h1>Comparador de preços</h1><p class="lead">Revise sua pasta inteira com as últimas ofertas salvas do MYP Cards.</p></div>
+      <button class="button primary" id="review-prices" type="button">Ver preços da minha pasta</button>
+    </header>
+    <div id="notice" class="notice" role="status" hidden></div>
+    <section class="panel import-panel" id="importacao" aria-labelledby="import-title">
+      <div class="panel-top"><div><h2 id="import-title">Importação e atualização</h2><p>Carregue uma lista ou atualize os dados do MYP Cards.</p></div><button class="text-button" id="sample" type="button">Carregar exemplo</button></div>
+      <div class="tabs" role="tablist" aria-label="Forma de importação">
+        <button type="button" id="tab-store" role="tab" aria-selected="true" aria-controls="pane-store">Vitrine MYP</button>
+        <button type="button" id="tab-paste" role="tab" aria-selected="false" aria-controls="pane-paste" tabindex="-1">Colar lista</button>
+        <button type="button" id="tab-file" role="tab" aria-selected="false" aria-controls="pane-file" tabindex="-1">Importar arquivo</button>
+      </div>
+      <div class="tab-pane" id="pane-store" role="tabpanel" aria-labelledby="tab-store">
+        <label for="store-url">URL da vitrine de Yu-Gi-Oh!</label>
+        <input id="store-url" type="url" placeholder="https://mypcards.com/seu-usuario/yugioh" spellcheck="false" autocomplete="off">
+        <div class="sync-fields"><button type="button" class="button primary" id="connect-myp">Conectar ao MYP</button><div><label for="sync-scope">Atualização em lote</label><select id="sync-scope"><option value="both">Pasta e referências</option><option value="store">Só minha pasta</option><option value="refs">Só referências do MYP</option></select></div><button type="button" class="button secondary" id="start-myp-sync">Atualizar em lote</button></div>
+        <div id="sync-url-panel" hidden><label for="sync-urls">URLs das cartas (opcional, uma por linha)</label><textarea id="sync-urls" rows="3" placeholder="https://mypcards.com/yugioh/produto/322754/harmonia-fydraulis"></textarea><p class="hint">Sem URLs, o app usa todas as cartas da pasta carregada nesta tela.</p></div>
+        <details id="myp-bookmark-setup"><summary>Configurar o favorito do MYP no Chrome</summary><p class="hint">Arraste o link abaixo para a barra de favoritos e substitua o favorito antigo para ver e salvar os resultados durante a coleta. Depois de clicar em Conectar ao MYP no app, acione o favorito na aba da vitrine.</p><a class="button secondary" id="myp-bookmark" draggable="true" href="#myp-bookmark-setup" aria-disabled="true">Conectar comparador MYP</a><button type="button" class="text-button" id="copy-myp-bookmark" disabled>Copiar endereço do favorito</button><p id="myp-bookmark-status" class="hint" role="status"></p></details>
+        <p id="myp-sync-status" class="hint" role="status"></p>
+        <div class="inline-actions"><button type="button" class="text-button" id="stop-myp-sync" hidden>Parar coleta</button><button type="button" class="button secondary" id="apply-myp-sync" hidden>Aplicar coleta recebida</button></div>
+        <details><summary>Consultar vitrine pela hospedagem</summary><p class="hint">A hospedagem depende da resposta do MYP e pode receber HTTP 403.</p><button type="button" class="button secondary" id="load-store">Importar vitrine pela hospedagem</button><div id="store-recovery" class="inline-actions" hidden><button type="button" class="text-button" id="retry-store">Retomar importação</button><button type="button" class="text-button" id="use-partial">Usar itens já carregados</button></div></details>
+      </div>
+      <div class="tab-pane" id="pane-paste" role="tabpanel" aria-labelledby="tab-paste" hidden>
+        <label for="paste">Lista de cartas</label>
+        <textarea id="paste" rows="4" placeholder="Carta;Código;Condição;Idioma;Meu preço&#10;Guardião de Exemplo;DEMO-001;NM;PT;0,75" spellcheck="false"></textarea>
+        <div class="inline-actions"><button type="button" class="button secondary" id="load-paste">Importar lista colada</button><button type="button" class="text-button" id="template-own">Baixar modelo da pasta</button></div>
+        <p class="hint">Cole células da planilha ou texto separado por ponto e vírgula. Um preço por carta, em reais.</p>
+      </div>
+      <div class="tab-pane" id="pane-file" role="tabpanel" aria-labelledby="tab-file" hidden>
+        <label for="own-file">Arquivo da pasta (CSV, TSV ou TXT)</label>
+        <input type="file" id="own-file" accept=".csv,.tsv,.txt,text/csv,text/plain,text/tab-separated-values">
+        <p class="hint">Salve sua planilha como CSV para trazer preços, códigos, condições e idiomas.</p>
+        <button type="button" class="text-button" id="template-file">Baixar modelo da pasta</button>
+      </div>
+      <div class="snapshot"><div><strong>Captura local da vitrine</strong><p>Carregue a captura se ela tiver sido incluída no build. Você também pode importar um backup em JSON abaixo.</p></div><button type="button" class="button secondary" id="load-snapshot">Carregar captura</button></div>
+      <details id="reference-tools"><summary>Importar preços de referência</summary>
+        <p class="hint">Cole ou importe uma planilha de ofertas de outros vendedores. Use uma linha por oferta e preencha código ou edição, condição e idioma. Se a pasta incluir a coluna Preço referência, o comparador também lê os valores dessa coluna.</p>
+        <label for="reference-paste">Lista de referências</label><textarea id="reference-paste" rows="3" placeholder="Carta;Código;Condição;Idioma;Preço referência;Fonte;Vendedor&#10;Guardião de Exemplo;DEMO-001;NM;PT;0,95;MYP Cards;outra-loja"></textarea>
+        <div class="ref-actions"><button type="button" class="button secondary" id="load-refs">Importar lista colada</button><label class="file-label">Ou selecione um arquivo <input type="file" id="ref-file" accept=".csv,.tsv,.txt,text/csv,text/plain,text/tab-separated-values"></label><button type="button" class="text-button" id="template-ref">Baixar modelo de referências</button></div>
+      </details>
+      <details><summary>Importar backup de uma coleta do MYP</summary><p class="hint">Use o JSON baixado na aba do MYP caso as abas não consigam trocar dados automaticamente.</p><label for="capture-file">Arquivo da coleta (JSON)</label><input type="file" id="capture-file" accept=".json,application/json"></details>
+      <details><summary>Conexão com o MYP Cards</summary><p class="hint">O MYP usa um token de API próprio para consultas. O token é emitido na sua conta após aprovação. A API pública documenta consultas de catálogo e preços.</p><div class="inline-actions"><button type="button" class="button secondary" id="check-myp">Testar conexão</button><a href="https://mypcards.com/acesso-api" target="_blank" rel="noopener noreferrer">Acesso à API do MYP Cards</a></div><p id="myp-connection-result" class="hint" role="status"></p></details>
+      <div class="run-settings">
+        <div class="setting-source"><label for="mode">Fonte das referências</label><select id="mode"><option value="capture">Ofertas coletadas no MYP Cards</option><option value="live">Consultar o MYP Cards agora</option><option value="manual">Referências importadas</option></select></div>
+        <div class="setting-seller"><label for="seller">Seu vendedor <span class="optional" title="Usado para excluir seus próprios anúncios das referências online.">(para consulta MYP)</span></label><input id="seller" type="text" placeholder="Seu usuário no MYP" autocomplete="off" maxlength="75"></div>
+        <div class="setting-tolerance"><label for="tolerance">Tolerância (%)</label><input aria-describedby="comparison-rule" id="tolerance" type="number" inputmode="decimal" min="0" max="100" step="0.1" value="0"></div>
+        <div class="run-buttons"><button type="button" class="button primary" id="run">Analisar lista</button><button type="button" class="button secondary" id="stop" hidden>Pausar</button></div>
+      </div>
+      <p class="footnote" id="import-meta">Nenhuma carta importada · Nenhuma referência importada</p>
+    </section>
+    <section class="panel progress-panel" aria-labelledby="progress-title">
+      <div class="progress-heading"><div><h2 id="progress-title">Progresso do lote</h2><p id="progress-caption">Importe uma lista ou carregue o exemplo para começar.</p></div><strong id="percent">0%</strong></div>
+      <progress id="progress" aria-label="Progresso da análise" max="1" value="0"></progress>
+      <div class="progress-footer"><span id="processed">0 de 0 cartas processadas</span><button id="retry" class="text-button" type="button" hidden>Tentar falhas de novo</button></div>
+      <p id="run-note" class="hint" hidden></p>
+    </section>
+    <section id="resultados" aria-labelledby="results-title">
+      <div class="result-heading"><div><h2 id="results-title" tabindex="-1">Resultados</h2><p id="result-summary">O resumo da análise aparece aqui.</p></div><div class="result-actions"><button class="button secondary" type="button" id="fill-references" disabled>Completar referências</button><button class="button secondary" type="button" id="export" disabled><span aria-hidden="true">⇩</span> Exportar CSV</button></div></div>
+      <details class="panel market-panel" id="market-panel">
+        <summary>Preços gerais pela API pública</summary>
+        <p class="hint">Menor preço e média ponderada de anúncios do <a href="https://mypcards.com/">MYP Cards</a> para o produto. Os valores podem incluir seu anúncio e misturar condições e idiomas. Escolha os filtros abaixo para priorizar as cartas visíveis.</p>
+        <div class="inline-actions"><button class="button secondary" type="button" id="run-market" disabled>Consultar pela API</button><button class="text-button" type="button" id="stop-market" hidden>Pausar</button><p class="hint" id="market-progress" role="status"></p></div>
+        <div class="table-scroll market-table" id="market-table" tabindex="0" role="region" aria-label="Preços gerais do MYP Cards" hidden>
+          <table><thead><tr><th scope="col">Carta</th><th scope="col">Meu preço</th><th scope="col">Menor geral</th><th scope="col">Média geral</th><th scope="col">Consultado em</th></tr></thead><tbody id="market-rows"></tbody></table>
+        </div>
+      </details>
+      <div class="stats" aria-label="Resumo do lote">
+        <button class="stat" type="button" data-status-filter="all" aria-pressed="true"><span>Cartas na pasta</span><strong id="stat-total">0</strong></button>
+        <button class="stat adjust" type="button" data-status-filter="adjust" aria-pressed="false"><span>Rever preço</span><strong id="stat-adjust">0</strong></button>
+        <button class="stat good" type="button" data-status-filter="competitive" aria-pressed="false"><span>Competitivas</span><strong id="stat-good">0</strong></button>
+        <button class="stat" type="button" data-status-filter="partial" aria-pressed="false"><span>Coleta inconclusiva</span><strong id="stat-partial">0</strong></button>
+        <button class="stat" type="button" data-status-filter="unavailable" aria-pressed="false"><span>Sem referência</span><strong id="stat-no-ref">0</strong></button>
+      </div>
+      <div class="panel table-panel">
+        <div class="filters">
+          <label class="search-label">Buscar carta<input id="search" type="search" placeholder="Nome, código ou edição"></label>
+          <label>Situação<select id="status"><option value="all">Todas</option><option value="adjust">Rever preço</option><option value="competitive">Competitivas</option><option value="partial">Coleta inconclusiva</option><option value="unavailable">Sem referência</option><option value="failed">Falhas</option><option value="pending">Pendentes</option></select></label>
+          <label>Preço mínimo<input id="minimum" inputmode="decimal" type="text" placeholder="R$ 0,00"></label>
+          <label>Preço máximo<input id="maximum" inputmode="decimal" type="text" placeholder="Sem limite"></label>
+          <button type="button" id="one-real" class="button filter-button" aria-pressed="false">Até R$ 1</button>
+          <button type="button" id="reset-filters" class="text-button">Limpar</button>
+        </div>
+        <p class="filter-error" id="filter-error" hidden>Informe uma faixa válida com mínimo menor ou igual ao máximo.</p>
+        <p class="hint reference-sync-status" id="reference-sync-status" role="status" hidden></p>
+        <div class="reference-live" id="reference-live" hidden>
+          <div class="reference-live-heading"><h3>Últimas referências recebidas</h3><button type="button" class="text-button" id="stop-reference-sync" hidden>Parar coleta</button></div>
+          <p class="hint" id="reference-live-count"></p>
+          <ul id="reference-live-rows"></ul>
+        </div>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Tabela de cartas">
+          <table><thead><tr><th scope="col">Carta</th><th scope="col">Condição</th><th scope="col"><button id="sort-price" class="sort" type="button">Meu preço <span aria-hidden="true">↕</span></button></th><th scope="col">Menor preço</th><th scope="col">Média das ofertas</th><th scope="col">Teto com tolerância</th><th scope="col">Diferença</th><th scope="col">Situação</th><th scope="col">Preço sugerido</th><th scope="col"><span class="sr-only">Ações da carta</span></th></tr></thead><tbody id="rows"></tbody></table>
+        </div>
+        <div class="empty" id="empty"><span class="empty-icon" aria-hidden="true">▤</span><strong>Sua lista aparece aqui</strong><p>Importe sua pasta ou carregue o exemplo para explorar.</p></div>
+        <div class="table-footer"><span id="shown">0 itens</span><div class="pagination" id="pagination" hidden><button id="previous" type="button" class="button secondary">Anterior</button><span id="page-number"></span><button id="next" type="button" class="button secondary">Próxima</button></div></div>
+      </div>
+      <p class="attribution" id="comparison-rule">Ofertas do <a href="https://mypcards.com/" target="_blank" rel="noopener noreferrer">MYP Cards</a> da mesma versão, condição e idioma, sem frete e sem seus anúncios. A média é simples por oferta. O teto é o menor preço acrescido da tolerância. Use Completar referências para ler todas as páginas dos produtos ainda sem coleta completa.</p>
+      <details class="pricing-info"><summary>Como o preço sugerido é calculado</summary><p class="hint">A sugestão usa ofertas equivalentes à condição da sua carta. O menor preço tem peso de 60% e a média das ofertas tem peso de 40%. Se você informar a média de vendas concluídas em Detalhes ou no CSV, os pesos passam para 45% no menor preço, 30% na média das ofertas e 25% na média de vendas concluídas. O teto de tolerância continua sendo o critério para a situação da carta.</p></details>
+    </section>
+  </main>
+  <dialog id="detail" aria-labelledby="detail-title"><form id="detail-form" method="dialog"><div class="dialog-head"><div><p class="context">Detalhes da carta</p><h2 id="detail-title"></h2><p id="detail-subtitle"></p></div><button class="button secondary" type="button" id="close-detail" aria-label="Fechar detalhes">×</button></div><section id="detail-message"></section><section id="detail-refs"></section><fieldset><legend>Editar dados locais</legend><div class="detail-fields"><label>Código<input name="code" maxlength="100"></label><label>Edição<input name="edition" maxlength="140"></label><label>Condição<input name="condition" placeholder="NM, SP, MP, HP, DM" maxlength="30"></label><label>Idioma<input name="language" placeholder="PT ou EN" maxlength="45"></label><label>Meu preço<input name="price" inputmode="decimal"></label><label>Média de vendas concluídas <span class="optional">(opcional)</span><input name="soldAverage" inputmode="decimal" placeholder="Só vendas da mesma versão e estado"></label><label>Quantidade<input name="quantity" type="number" min="1" step="1"></label><label>Raridade<input name="rarity" maxlength="75"></label><label>Impressão<input name="printing" placeholder="1st, Unlimited…" maxlength="45"></label></div></fieldset><p class="filter-error" id="detail-error" hidden>Informe um preço válido em reais.</p><div class="dialog-actions"><button type="submit" class="button primary">Salvar localmente</button></div></form></dialog>
+  <dialog id="price-preparation" aria-labelledby="prepare-title">
+    <form method="dialog" class="dialog-head"><div><h2 id="prepare-title">Preparar atualização de preço</h2><p><strong id="prepare-name"></strong></p><p id="prepare-variant"></p></div><button class="button secondary" aria-label="Fechar preparação">×</button></form>
+    <dl class="prepare-summary"><div><dt>Meu preço</dt><dd id="prepare-current"></dd></div><div><dt>Preço sugerido</dt><dd id="prepare-suggestion"></dd></div></dl>
+    <p class="hint" id="prepare-partial" hidden>Sugestão provisória, baseada nas ofertas disponíveis na coleta parcial.</p>
+    <p class="hint" id="prepare-limit" hidden></p>
+    <p class="hint">Confirme o anúncio da sua conta e salve o novo valor no MYP Cards.</p>
+    <div class="prepare-copy"><label for="prepare-money">Novo valor (R$)<input id="prepare-money" type="text" readonly></label><button type="button" id="prepare-copy" class="button secondary">Copiar valor</button><a id="prepare-myp" class="button primary" target="_blank" rel="noopener noreferrer">Abrir carta no MYP Cards</a></div>
+    <p id="prepare-copy-status" class="hint" role="status"></p>
+  </dialog>
+</body>
+</html>
