@@ -1,0 +1,19 @@
+# Segredos e configuração local
+.env
+.env.*
+!.env.example
+config.local.*
+*.key
+*.pem
+# Dados locais
+cache/
+data/
+*.sqlite
+*.sqlite3
+*.db
+# Dependências e builds
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
