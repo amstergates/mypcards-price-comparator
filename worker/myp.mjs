@@ -65,7 +65,9 @@ export function parseOffers(html) {
   const pages = type => Math.max(1,...[...html.matchAll(new RegExp(`estoque-${type}-page=(\\d+)`,'g'))].map(m=>Number(m[1])).filter(page=>Number.isSafeInteger(page)));
   const pageSize = type => {
     const href=[...html.matchAll(/href=["']([^"']+)["']/gi)].find(([,link])=>link.includes(`estoque-${type}-page=`))?.[1];
-    return href ? /[?&]((?:dp-\d+-)?per-page)=(\d+)/.exec(decode(href))?.slice(1) || [] : [];
+    const sizes=href ? [...decode(href).matchAll(/[?&]((?:dp-\d+-)?per-page)=(\d+)/g)] : [];
+    const ownSize=sizes.find(([,key])=>type==='cert'?key==='per-page':key!=='per-page');
+    return (ownSize || sizes[0])?.slice(1) || [];
   };
   const [certSizeKey,certSize]=pageSize('cert'), [otherSizeKey,otherSize]=pageSize('outros');
   const slug = /<link\b[^>]*href=["']https:\/\/mypcards\.com\/yugioh\/produto\/\d+\/([a-z0-9_-]+)["'][^>]*rel=["']canonical["']/i.exec(html)?.[1] || '';

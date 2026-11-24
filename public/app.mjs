@@ -1,4 +1,4 @@
-import {applyTolerance, classify, clean, codeKey, compatible, csv, identityMatches, labels, language, mergeMypCaptures, money, mypProductUrl, norm, parseList, storefrontSeller, suggestedPrice, variant} from './core.mjs';
+import {applyTolerance, classify, clean, codeKey, compatible, csv, identityMatches, isCompleteOfferCollection, labels, language, mergeMypCaptures, money, mypProductUrl, norm, parseList, storefrontSeller, suggestedPrice, variant} from './core.mjs';
 import {collectMarketPrices, currentMarketPrice, marketTarget, savedMarketPrice} from './market-api.mjs';
 
 const $ = id => document.getElementById(id);
@@ -600,9 +600,9 @@ function connectToMyp() {
   $('myp-bookmark-setup').open=true;
   setSyncStatus('Na aba do MYP, acione o favorito Conectar comparador MYP.');
 }
-function startBrowserSync(card=null,{fillMissing=false}={}) {
+function startBrowserSync(card=null,{fillMissing=false,complete=false}={}) {
   if (browserSync || pendingCapture || locked()) return;
-  const jobOptions=card ? {cardUid:card.uid,cardName:card.name || card.code || 'Carta selecionada',quick:true} : {fillMissing};
+  const jobOptions=card ? {cardUid:card.uid,cardName:card.name || card.code || 'Carta selecionada',quick:!complete} : {fillMissing};
   const say=text=>setSyncStatus(text,{...jobOptions,scope:card||fillMissing?'refs':$('sync-scope').value});
   if (browserConnection && !browserConnection.ready && !browserConnection.popup.closed) {
     say('Acione o favorito na aba do MYP para concluir a conexão.');return;
@@ -627,7 +627,7 @@ function startBrowserSync(card=null,{fillMissing=false}={}) {
   if (scope==='refs' && state.cards.length && state.seller && norm(state.seller)!==norm(seller)) {
     say('Use a URL da vitrine correspondente à pasta atual para atualizar apenas suas referências.');return;
   }
-  if (card && Date.now()<rowRetryAt) {void showSavedLookup({...jobOptions,links},rowRetryAt);return;}
+  if (jobOptions.quick && Date.now()<rowRetryAt) {void showSavedLookup({...jobOptions,links},rowRetryAt);return;}
   const runId=crypto.randomUUID();
   const storeUrl=`https://mypcards.com/${encodeURIComponent(seller)}/yugioh`;
   const sameTab=browserConnection?.ready && !browserConnection.popup.closed && norm(browserConnection.seller)===norm(seller);
@@ -694,8 +694,8 @@ async function applyBrowserCapture() {
   const data=pendingCapture;
   const sync=pendingSync;
   if (!data || locked()) return;
-  const rowQuery=Boolean(sync?.quick);
-  const retryAt=rowQuery ? Math.max(sync.retryAt || 0,Number.isSafeInteger(data.retryAt) && data.retryAt<=8.64e15 ? data.retryAt : 0) : 0;
+  const rowQuery=sync?.cardUid!==undefined;
+  const retryAt=sync?.quick ? Math.max(sync.retryAt || 0,Number.isSafeInteger(data.retryAt) && data.retryAt<=8.64e15 ? data.retryAt : 0) : 0;
   if (retryAt) {
     rowRetryAt=Math.max(rowRetryAt,retryAt);
     if (!Object.values(data.products).some(product=>Array.isArray(product.offers))) {
@@ -713,7 +713,7 @@ async function applyBrowserCapture() {
   try {
     const previous=await loadMarketCapture().catch(()=>null);
     const sameSeller=previous && norm(previous.seller)===norm(data.seller);
-    const merged=mergeMypCaptures(sameSeller?previous:null,rowQuery?{...data,quick:true}:data);
+    const merged=mergeMypCaptures(sameSeller?previous:null,data);
     await captureStorage('readwrite',merged);
     importedCapture=merged; state.useImported=true; capturePromise=undefined;
     if (data.completeStore && !usedStreamInventory) {
@@ -721,10 +721,7 @@ async function applyBrowserCapture() {
     } else if (selective) {
       const signal=new AbortController().signal;
       const affected=state.cards.filter(card=>Object.hasOwn(data.products,rowProduct(card)?.productId || card.productId));
-      await Promise.all(affected.map(async card=>{
-        const market=data.products[rowProduct(card)?.productId || card.productId];
-        card.result=await inspect(card,signal,'capture',rowQuery && market.offers ? data : null);
-      }));
+      await Promise.all(affected.map(async card=>{card.result=await inspect(card,signal,'capture',merged);}));
     } else {
       state.seller ||= data.seller;
       resetResults();
@@ -732,10 +729,15 @@ async function applyBrowserCapture() {
     if (!rowQuery) {state.mode='capture';settingsFromState();}
     pendingCapture=null;pendingSync=null;
     const results=Object.values(data.products);
-    const complete=results.filter(p=>Array.isArray(p.offers) && p.offers.length===p.expected && !p.warning).length;
+    const complete=results.filter(isCompleteOfferCollection).length;
     const partial=results.filter(p=>Array.isArray(p.offers)).length-complete;
     const first=results[0];
-    const references=rowQuery && first?.offers && partial ? `Resultado parcial · ${first.offers.length} de ${first.expected} ofertas lidas.` : data.scope==='store'?'':`${results.length} de ${data.plannedProducts ?? results.length} produtos percorridos. ${complete} completos, ${partial} parciais e ${results.length-complete-partial} com falha.`;
+    const keptComplete=rowQuery && first && !isCompleteOfferCollection(first) && isCompleteOfferCollection(merged.products[first.productId]);
+    let references='';
+    if (keptComplete) references='As referências da última coleta completa continuam na tabela.';
+    else if (rowQuery && first?.offers && partial) references=`Resultado parcial · ${first.offers.length} de ${first.expected} ofertas do produto lidas.`;
+    else if (rowQuery && complete) references=`Coleta completa · ${first.offers.length} ofertas do produto lidas. Cada raridade foi comparada separadamente.`;
+    else if (data.scope!=='store') references=`${results.length} de ${data.plannedProducts ?? results.length} produtos percorridos. ${complete} completos, ${partial} parciais e ${results.length-complete-partial} com falha.`;
     const recent=Number.isSafeInteger(data.cachedProducts) && data.cachedProducts>0?'Resultado dos últimos 2 minutos reaproveitado.':'';
     const issue=retryAt?`O MYP limitou novas consultas até ${referenceTime.format(retryAt)}.`:data.interrupted;
     setSyncStatus([data.completeStore?`${data.storeRows.length} anúncios atualizados.`:'',references,recent,issue,resumeNotice(data)].filter(Boolean).join(' '),sync);
@@ -860,10 +862,10 @@ function compareMyp(card,product,market,seller,refSource,note='') {
   const variants = new Set(refs.map(ref=>JSON.stringify([variant(ref.rarity),variant(ref.printing)])));
   const unresolved = variants.size>1 && (!card.rarity || !card.printing && card.origin!=='store');
   const reason = unresolved ? 'Há ofertas de variantes diferentes. Informe a raridade e a impressão da sua carta.' : refs.length ? '' : 'Entre as ofertas coletadas, nenhuma é de outro vendedor com a mesma variante, condição e idioma.';
-  const partial=Boolean(market.warning) || Number.isSafeInteger(expected) && offers.length<expected;
-  const coverage=partial?`${offers.length} de ${expected} ofertas da página de produto foram coletadas. Os preços exibidos usam somente ofertas equivalentes dessa coleta.`:'';
+  const partial=!isCompleteOfferCollection(market);
+  const coverage=partial?`${offers.length} de ${expected} ofertas do produto foram coletadas, somando todas as raridades. Os preços usam somente ofertas equivalentes à sua carta.`:'';
   const result = classify(card,unresolved?[]:refs,state.tolerance,listOf([note,coverage,market.warning,reason]));
-  return applyTolerance({...result,partial,productUrl:url,refAt:checkedAt,refSource},card.price,state.tolerance);
+  return applyTolerance({...result,partial,offerCoverage:{read:offers.length,expected},productUrl:url,refAt:checkedAt,refSource},card.price,state.tolerance);
 }
 async function inspectCapture(card,signal,note='',currentCapture=null) {
   const capture = currentCapture || await loadMarketCapture();
@@ -1025,10 +1027,14 @@ function renderTable() {
     const ref=element('td',brl(card.result?.best),'money');
     if (card.result?.refs.length) {
       const date=Date.parse(card.result.refAt);
-      const amount=`${card.result.refs.length} ${card.result.refs.length===1?'oferta':'ofertas'}`;
+      const amount=`${card.result.refs.length} ${card.result.refs.length===1?'oferta comparável':'ofertas comparáveis'}`;
       ref.append(element('small',listOf([amount,Number.isFinite(date)?referenceDay.format(date):''])));
     }
-    if (card.result?.partial && card.result.status==='adjust') ref.append(element('small','Coleta parcial'));
+    if (card.result?.partial) {
+      const coverage=card.result.offerCoverage;
+      if (coverage) ref.append(element('small',`${coverage.read} de ${coverage.expected} do produto`));
+      else if (card.result.status==='adjust') ref.append(element('small','Coleta parcial'));
+    }
     const delta=card.result?.delta;
     const badge=element('td');
     const value=card.result?.status || 'pending';
@@ -1056,6 +1062,14 @@ function renderTable() {
       query.disabled=locked()||Boolean(browserSync || pendingCapture || browserConnection && !browserConnection.ready);
       query.setAttribute('aria-label',`Consultar referência de ${card.name || card.code || `linha ${card.uid}`}`);
       rowActions.append(query);
+      if (needsOfferCollection(card)) {
+        const full=element('button','Completar carta','text-button');
+        full.type='button';full.dataset.reference=card.uid;full.dataset.complete='true';
+        full.title='Lê todas as páginas do produto e atualiza as raridades cadastradas na pasta.';
+        full.disabled=query.disabled;
+        full.setAttribute('aria-label',`Completar coleta de ${card.name || card.code || card.uid}`);
+        rowActions.append(full);
+      }
     }
     action.append(rowActions);
     row.append(cell,quality,element('td',brl(card.price),'money'),ref,element('td',brl(card.result?.average),'money'),element('td',brl(card.result?.limit),'money'),element('td',delta>0?`+${brl(delta)}`:brl(delta),'money'),badge,proposed,action);
@@ -1271,7 +1285,7 @@ $('rows').addEventListener('click',event=>{
   const query=event.target.closest('button[data-reference]');
   if (query) {
     const card=state.cards.find(card=>card.uid===Number(query.dataset.reference));
-    if (card) startBrowserSync(card);
+    if (card) startBrowserSync(card,{complete:query.dataset.complete==='true'});
     return;
   }
   const prepare=event.target.closest('button[data-prepare]');
